@@ -1,0 +1,151 @@
+# Default values for django-angular-main.
+# Override per environment:
+#   helm upgrade --install django-angular-main ./helm -f values/production.yaml --set image.tag=$SHA
+#
+# Documentation convention: '# --' comments are parsed by helm-docs.
+
+# -- Number of replicas. Ignored when autoscaling.enabled=true.
+replicaCount: 1
+
+image:
+  # -- Container registry and image name. Override in CI with your actual GHCR path.
+  repository: ghcr.io/your-org/django-angular-main
+  # -- Image pull policy. Use Always in dev to catch latest changes.
+  pullPolicy: IfNotPresent
+  # -- Image tag. Defaults to chart appVersion when empty. Pin to SHA in production.
+  tag: ""
+
+# -- Secrets used to pull from private registries.
+imagePullSecrets: []
+# Example:
+#   - name: regcred
+
+# -- Override the chart name for resource names.
+nameOverride: ""
+# -- Override the full resource name (release-name + chart-name by default).
+fullnameOverride: ""
+
+serviceAccount:
+  # -- Create a dedicated ServiceAccount.
+  create: true
+  # -- Annotations for cloud IAM bindings (e.g. EKS IRSA, GKE Workload Identity).
+  annotations: {}
+  # -- Override the ServiceAccount name. Defaults to the fullname.
+  name: ""
+
+# -- Annotations added to every Pod.
+podAnnotations: {}
+
+# -- Pod-level security context (applies to all containers).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container-level security context.
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+service:
+  # -- Kubernetes Service type. ClusterIP is safest; use LoadBalancer only when needed.
+  type: ClusterIP
+  # -- External port exposed by the Service.
+  port: 80
+  # -- Container port the app listens on.
+  targetPort: 8000
+
+ingress:
+  # -- Enable Ingress. Set to true and configure host before merging.
+  enabled: false
+  # -- Ingress class. Use 'nginx', 'alb' (AWS), or 'gce' (GCP).
+  className: nginx
+  # -- Ingress annotations. Add cert-manager.io/cluster-issuer for TLS.
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+  hosts:
+    - host: django-angular-main.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- TLS configuration. Provide secretName + hosts for HTTPS.
+  tls: []
+  # Example:
+  #   - secretName: django-angular-main-tls
+  #     hosts:
+  #       - django-angular-main.example.com
+
+# -- CPU and memory resource allocation.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  # -- Enable HPA. Requires Metrics Server installed in the cluster.
+  # kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  # -- Enable PDB for zero-downtime node maintenance. Only useful with replicaCount >= 2.
+  enabled: false
+  minAvailable: 1
+
+networkPolicy:
+  # -- Enable NetworkPolicy to restrict pod communication.
+  enabled: false
+
+probe:
+  # -- HTTP path for liveness and readiness probes.
+  path: /health/
+  # -- Container port used by probes (matches service.targetPort).
+  port: 8000
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 3
+  timeoutSeconds: 3
+
+# -- Non-sensitive application configuration injected via ConfigMap.
+config:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+  # Add your env vars here (no secrets — use ESO or Sealed Secrets for those)
+
+# -- Node selector for pod scheduling.
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling.
+tolerations: []
+
+# -- Affinity rules. Example below spreads pods across nodes.
+affinity: {}
+# Example (spread across nodes):
+#   podAntiAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#       - weight: 100
+#         podAffinityTerm:
+#           labelSelector:
+#             matchLabels:
+#               app.kubernetes.io/name: django-angular-main
+#           topologyKey: kubernetes.io/hostname
