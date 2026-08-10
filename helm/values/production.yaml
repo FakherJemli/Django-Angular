@@ -1,0 +1,55 @@
+# Production environment overrides.
+# Deploy: helm upgrade --install django-angular-main ./helm -f helm/values/base.yaml -f helm/values/production.yaml \
+#           -n production --set image.tag=$IMAGE_SHA --atomic --wait --timeout 5m0s
+
+image:
+  pullPolicy: IfNotPresent
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "16m"
+  hosts:
+    - host: django-angular-main.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: django-angular-main-tls
+      hosts:
+        - django-angular-main.example.com
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: django-angular-main
+          topologyKey: kubernetes.io/hostname
+
+config:
+  APP_ENV: "production"
+  LOG_LEVEL: "warn"
