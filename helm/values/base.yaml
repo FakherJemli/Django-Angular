@@ -1,0 +1,39 @@
+# Base values — shared across all environments.
+# Override in environment-specific files.
+image:
+  repository: ghcr.io/your-org/django-angular-main
+  pullPolicy: IfNotPresent
+  tag: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+probe:
+  path: /health/
+  port: 8000
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 3
+  timeoutSeconds: 3
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+config:
+  APP_ENV: "base"
+  LOG_LEVEL: "info"
