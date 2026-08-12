@@ -1,0 +1,32 @@
+{{ include "django-angular-main.fullname" . }} has been deployed successfully!
+
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+Namespace: {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+Your application is accessible at:
+  {{- range .Values.ingress.hosts }}
+  http://{{ .host }}
+  {{- end }}
+{{- else }}
+To access the application locally, run:
+  kubectl port-forward svc/{{ include "django-angular-main.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  Then open: http://localhost:8080
+{{- end }}
+
+To run tests:
+  helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+To see all resources:
+  kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+{{- if .Values.autoscaling.enabled }}
+HPA is ENABLED (min={{ .Values.autoscaling.minReplicas }}, max={{ .Values.autoscaling.maxReplicas }}).
+Ensure Metrics Server is installed: kubectl top pods -n {{ .Release.Namespace }}
+{{- end }}
+
+Next steps:
+  1. Update image.repository in values.yaml to your actual GHCR path
+  2. Enable ingress and set your domain
+  3. Add secrets via External Secrets Operator or Sealed Secrets
+  4. Enable autoscaling for production workloads

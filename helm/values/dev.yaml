@@ -1,0 +1,25 @@
+# Dev environment overrides.
+# Deploy: helm upgrade --install django-angular-main ./helm -f helm/values/base.yaml -f helm/values/dev.yaml -n dev
+replicaCount: 1
+
+image:
+  pullPolicy: Always   # Always pull in dev to get latest changes
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: django-angular-main.dev.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+config:
+  APP_ENV: "development"
+  LOG_LEVEL: "debug"
