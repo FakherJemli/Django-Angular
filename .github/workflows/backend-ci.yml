@@ -42,7 +42,7 @@ jobs:
       - name: Install pip-audit
         run: pip install pip-audit
       - name: Audit dependencies
-        # DevOpsGen: audit-grace-period-until: 2026-11-09
+        # DevOpsGen: audit-grace-period-until: 2026-11-07
         run: |
           if [ -f requirements.txt ]; then
             pip-audit -r requirements.txt --vulnerability-service pypi
