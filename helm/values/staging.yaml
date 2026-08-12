@@ -1,0 +1,23 @@
+# Staging environment overrides.
+# Deploy: helm upgrade --install django-angular-main ./helm -f helm/values/base.yaml -f helm/values/staging.yaml -n staging
+replicaCount: 2
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: django-angular-main.staging.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+config:
+  APP_ENV: "staging"
+  LOG_LEVEL: "info"
